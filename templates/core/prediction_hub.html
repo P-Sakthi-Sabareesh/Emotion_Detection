@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card board">
+    <h2>Prediction Workflows</h2>
+    <div class="workflow-grid">
+        <a class="workflow-item" href="{% url 'prediction-upload' %}">
+            <div class="dot"></div>
+            <div>
+                <h3>Upload Photo to Predict</h3>
+                <p>Run emotion detection on an image file.</p>
+            </div>
+        </a>
+        <a class="workflow-item" href="{% url 'prediction-live' %}">
+            <div class="dot soft"></div>
+            <div>
+                <h3>Predict with Live Camera</h3>
+                <p>Use webcam frames for near real-time results.</p>
+            </div>
+        </a>
+    </div>
+</section>
+
+<section class="card board sample-board">
+    <h2>Quick Sample Faces</h2>
+    <p>Click a sample to run prediction instantly.</p>
+    <div class="sample-grid">
+        {% for sample in "12345" %}
+        <button class="sample-card" data-sample="sample-{{ sample }}">
+            <img src="/static/samples/sample-{{ sample }}.jpg" alt="Sample face {{ sample }}">
+            <span>Sample {{ sample }}</span>
+        </button>
+        {% endfor %}
+    </div>
+
+    <div id="sample-result-card" class="prediction-card empty">
+        <div class="prediction-empty">Select a sample face to view prediction insights.</div>
+    </div>
+</section>
+
+<script>
+const emotionUI = {
+    happy: { emoji: "😊", color: "#1f9d55" },
+    sad: { emoji: "😢", color: "#2f6fed" },
+    angry: { emoji: "😠", color: "#df3d43" },
+    fear: { emoji: "😨", color: "#805ad5" },
+    disgust: { emoji: "🤢", color: "#0f9f7a" },
+    surprise: { emoji: "😲", color: "#d98f19" },
+    neutral: { emoji: "😐", color: "#5c6784" }
+};
+
+function renderError(message) {
+    const card = document.getElementById("sample-result-card");
+    card.className = "prediction-card error";
+    card.innerHTML = `<div class="prediction-empty"><strong>Prediction failed</strong><br>${message}</div>`;
+}
+
+function renderLoading() {
+    const card = document.getElementById("sample-result-card");
+    card.className = "prediction-card loading";
+    card.innerHTML = `<div class="prediction-empty">Analyzing sample image...</div>`;
+}
+
+function getSelectedSampleInfo(sampleName) {
+    const card = document.querySelector(`.sample-card[data-sample="${sampleName}"]`);
+    if (!card) {
+        return { imageSrc: "", label: sampleName };
+    }
+    const image = card.querySelector("img");
+    const label = card.querySelector("span");
+    return {
+        imageSrc: image ? image.src : "",
+        label: label ? label.textContent : sampleName
+    };
+}
+
+function renderPrediction(data, sampleImageSrc, sampleLabel) {
+    if (data.error) {
+        renderError(data.error);
+        return;
+    }
+
+    const card = document.getElementById("sample-result-card");
+    const emotionKey = (data.emotion || "neutral").toLowerCase();
+    const ui = emotionUI[emotionKey] || emotionUI.neutral;
+    const confidence = Math.max(0, Math.min(100, (data.confidence || 0) * 100));
+    const sortedScores = Object.entries(data.scores || {})
+        .sort((a, b) => b[1] - a[1])
+        .map(([label, score]) => ({
+            label,
+            percent: Math.max(0, Math.min(100, score * 100))
+        }));
+
+    const bars = sortedScores
+        .map(
+            (item) => `
+            <div class="prob-row">
+                <div class="prob-label">${item.label}</div>
+                <div class="prob-bar-track">
+                    <div class="prob-bar-fill" style="width:${item.percent.toFixed(2)}%"></div>
+                </div>
+                <div class="prob-val">${item.percent.toFixed(2)}%</div>
+            </div>
+        `
+        )
+        .join("");
+
+    card.className = "prediction-card";
+    card.style.setProperty("--emotion-accent", ui.color);
+    card.innerHTML = `
+        <div class="prediction-head">Emotion Analysis Result</div>
+        <div class="prediction-main">
+            <div class="pred-image-col">
+                <div class="pred-label">Image</div>
+                <img src="${sampleImageSrc}" alt="${sampleLabel}" class="pred-sample-image">
+                <div class="pred-sample-caption">${sampleLabel}</div>
+            </div>
+            <div class="pred-metrics-col">
+                <div class="pred-label">Prediction</div>
+                <div class="emotion-badge">
+                    <span class="emotion-emoji">${ui.emoji}</span>
+                    <span class="emotion-name">${emotionKey}</span>
+                </div>
+
+                <div class="pred-label confidence-label">Confidence</div>
+                <div class="confidence-row">
+                    <div class="confidence-track">
+                        <div class="confidence-fill" style="width:${confidence.toFixed(2)}%"></div>
+                    </div>
+                    <div class="confidence-value">${confidence.toFixed(2)}%</div>
+                </div>
+
+                <div class="pred-label">Top Probabilities</div>
+                <div class="prob-wrap">${bars}</div>
+            </div>
+        </div>
+        <div class="prediction-footer">
+            <div><span>Latency</span><strong>${data.latency_ms} ms</strong></div>
+            <div><span>Model Version</span><strong>${data.model_version}</strong></div>
+        </div>
+    `;
+}
+
+async function runSamplePrediction(sampleName) {
+    renderLoading();
+    const response = await fetch(`/api/predict/sample/${sampleName}/`, {
+        method: "POST",
+        headers: { "X-CSRFToken": getCookie("csrftoken") }
+    });
+    const data = await response.json();
+    const sampleInfo = getSelectedSampleInfo(sampleName);
+    renderPrediction(data, sampleInfo.imageSrc, sampleInfo.label);
+}
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return "";
+}
+
+document.querySelectorAll(".sample-card").forEach((card) => {
+    card.addEventListener("click", () => runSamplePrediction(card.dataset.sample));
+});
+</script>
+{% endblock %}

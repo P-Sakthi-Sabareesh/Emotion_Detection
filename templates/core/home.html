@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+    <div class="hero-left">
+        <h1>Discover <span>Emotions</span><br>Through AI<br>Power</h1>
+        <p>
+            Experience reliable emotion recognition with real-time webcam inference,
+            image upload analysis, and model-backed confidence scoring.
+        </p>
+        <div class="cta-row">
+            <a class="btn primary" href="{% url 'prediction-hub' %}">Start Detection</a>
+            <a class="btn secondary" href="{% url 'about' %}">Learn More</a>
+        </div>
+    </div>
+    <div class="hero-right">
+        <div class="emoji-grid">
+            <div>🙂</div><div>😯</div><div>😐</div><div>😡</div><div>😱</div><div>😢</div>
+        </div>
+    </div>
+</section>
+{% endblock %}

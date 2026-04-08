@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card board">
+    <h2>Upload Image for Emotion Detection</h2>
+    <p class="section-sub">Upload a clear face photo. The model returns emotion, confidence, and class probabilities.</p>
+    <form method="post" enctype="multipart/form-data" class="upload-form">
+        {% csrf_token %}
+        <input type="file" name="image" accept="image/*" required>
+        <button class="btn primary" type="submit">Predict Emotion</button>
+    </form>
+    <p><a href="{% url 'prediction-hub' %}">Back to prediction</a></p>
+
+    {% if error %}
+    <div class="status error">{{ error }}</div>
+    {% endif %}
+
+    {% if result %}
+    {% widthratio result.confidence 1 100 as conf_pct %}
+    <div class="prediction-card reveal-item upload-result-card" style="--emotion-accent:#4f72db;">
+        <div class="prediction-head">Upload Prediction Result</div>
+        <div class="prediction-main single-col">
+            <div class="pred-metrics-col">
+                <div class="pred-label">Prediction</div>
+                <div class="emotion-badge">
+                    <span class="emotion-name">{{ result.emotion }}</span>
+                </div>
+
+                <div class="pred-label confidence-label">Confidence</div>
+                <div class="confidence-row">
+                    <div class="confidence-track">
+                        <div class="confidence-fill" style="width:{{ conf_pct }}%;"></div>
+                    </div>
+                    <div class="confidence-value">{{ conf_pct }}%</div>
+                </div>
+
+                <div class="pred-label">Top Probabilities</div>
+                <div class="prob-wrap">
+                    {% for label, score in sorted_scores %}
+                    <div class="prob-row">
+                        {% widthratio score 1 100 as prob_pct %}
+                        <div class="prob-label">{{ label }}</div>
+                        <div class="prob-bar-track">
+                            <div class="prob-bar-fill" style="width:{{ prob_pct }}%;"></div>
+                        </div>
+                        <div class="prob-val">{{ prob_pct }}%</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="prediction-footer">
+            <div><span>Latency</span><strong>{{ result.latency_ms }} ms</strong></div>
+            <div><span>Model Version</span><strong>{{ result.model_version }}</strong></div>
+        </div>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

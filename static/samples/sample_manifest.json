@@ -1,0 +1,34 @@
+{
+  "samples": [
+    {
+      "sample_file": "sample-1.jpg",
+      "expected_emotion": "happy",
+      "source_dataset_path": "test/happy/PrivateTest_61352712.jpg",
+      "model_confidence": 0.5783
+    },
+    {
+      "sample_file": "sample-2.jpg",
+      "expected_emotion": "sad",
+      "source_dataset_path": "test/sad/PrivateTest_39876925.jpg",
+      "model_confidence": 0.6321
+    },
+    {
+      "sample_file": "sample-3.jpg",
+      "expected_emotion": "angry",
+      "source_dataset_path": "test/angry/PrivateTest_67702983.jpg",
+      "model_confidence": 0.3918
+    },
+    {
+      "sample_file": "sample-4.jpg",
+      "expected_emotion": "surprise",
+      "source_dataset_path": "test/surprise/PublicTest_20980168.jpg",
+      "model_confidence": 0.7608
+    },
+    {
+      "sample_file": "sample-5.jpg",
+      "expected_emotion": "neutral",
+      "source_dataset_path": "test/neutral/PrivateTest_8503805.jpg",
+      "model_confidence": 0.3677
+    }
+  ]
+}

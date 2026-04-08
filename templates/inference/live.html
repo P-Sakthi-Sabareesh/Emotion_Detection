@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card board">
+    <h2>Live Camera Emotion Detection</h2>
+    <p class="section-sub">Run near real-time inference from webcam frames. Results update continuously.</p>
+    <div class="live-wrap">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="frameCanvas" width="320" height="240"></canvas>
+    </div>
+    <div class="cta-row">
+        <button class="btn primary" id="startBtn" type="button">Start Live Prediction</button>
+        <button class="btn secondary" id="stopBtn" type="button">Stop</button>
+    </div>
+    <div id="liveResultCard" class="prediction-card empty">
+        <div class="prediction-empty">No live prediction yet.</div>
+    </div>
+    <p><a href="{% url 'prediction-hub' %}">Back to prediction</a></p>
+</section>
+
+<script>
+const emotionUI = {
+    happy: { emoji: "😊", color: "#1f9d55" },
+    sad: { emoji: "😢", color: "#2f6fed" },
+    angry: { emoji: "😠", color: "#df3d43" },
+    fear: { emoji: "😨", color: "#805ad5" },
+    disgust: { emoji: "🤢", color: "#0f9f7a" },
+    surprise: { emoji: "😲", color: "#d98f19" },
+    neutral: { emoji: "😐", color: "#5c6784" }
+};
+
+let mediaStream = null;
+let timer = null;
+let inFlight = false;
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return "";
+}
+
+function renderLiveState(message, klass = "empty") {
+    const card = document.getElementById("liveResultCard");
+    card.className = `prediction-card ${klass}`;
+    card.innerHTML = `<div class="prediction-empty">${message}</div>`;
+}
+
+function renderLivePrediction(data) {
+    const emotionKey = (data.emotion || "neutral").toLowerCase();
+    const ui = emotionUI[emotionKey] || emotionUI.neutral;
+    const confidence = Math.max(0, Math.min(100, (data.confidence || 0) * 100));
+    const sortedScores = Object.entries(data.scores || {}).sort((a, b) => b[1] - a[1]);
+
+    const bars = sortedScores
+        .map(([label, value]) => {
+            const percent = Math.max(0, Math.min(100, value * 100));
+            return `
+                <div class="prob-row">
+                    <div class="prob-label">${label}</div>
+                    <div class="prob-bar-track"><div class="prob-bar-fill" style="width:${percent.toFixed(2)}%"></div></div>
+                    <div class="prob-val">${percent.toFixed(2)}%</div>
+                </div>
+            `;
+        })
+        .join("");
+
+    const card = document.getElementById("liveResultCard");
+    card.className = "prediction-card";
+    card.style.setProperty("--emotion-accent", ui.color);
+    card.innerHTML = `
+        <div class="prediction-head">Live Prediction</div>
+        <div class="prediction-main single-col">
+            <div class="pred-metrics-col">
+                <div class="pred-label">Prediction</div>
+                <div class="emotion-badge">
+                    <span class="emotion-emoji">${ui.emoji}</span>
+                    <span class="emotion-name">${emotionKey}</span>
+                </div>
+                <div class="pred-label confidence-label">Confidence</div>
+                <div class="confidence-row">
+                    <div class="confidence-track"><div class="confidence-fill" style="width:${confidence.toFixed(2)}%"></div></div>
+                    <div class="confidence-value">${confidence.toFixed(2)}%</div>
+                </div>
+                <div class="pred-label">Top Probabilities</div>
+                <div class="prob-wrap">${bars}</div>
+            </div>
+        </div>
+        <div class="prediction-footer">
+            <div><span>Latency</span><strong>${data.latency_ms} ms</strong></div>
+            <div><span>Model Version</span><strong>${data.model_version}</strong></div>
+        </div>
+    `;
+}
+
+async function initCamera() {
+    const video = document.getElementById("video");
+    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    video.srcObject = mediaStream;
+    await video.play();
+}
+
+async function pushFrame() {
+    if (inFlight) {
+        return;
+    }
+    const canvas = document.getElementById("frameCanvas");
+    const video = document.getElementById("video");
+    if (!video.videoWidth || !video.videoHeight) {
+        return;
+    }
+
+    inFlight = true;
+    const ctx = canvas.getContext("2d");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    try {
+        const response = await fetch("/api/predict/live-frame/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken")
+            },
+            body: JSON.stringify({ image: dataUrl })
+        });
+        const data = await response.json();
+        if (!response.ok || data.error) {
+            renderLiveState(`Prediction failed: ${data.error || "Unknown error"}`, "error");
+            return;
+        }
+        renderLivePrediction(data);
+    } catch (err) {
+        renderLiveState(`Prediction failed: ${err.message}`, "error");
+    } finally {
+        inFlight = false;
+    }
+}
+
+document.getElementById("startBtn").addEventListener("click", async () => {
+    try {
+        if (!mediaStream) {
+            await initCamera();
+        }
+        if (!timer) {
+            renderLiveState("Live prediction started. Analyzing frames...", "loading");
+            timer = setInterval(pushFrame, 1200);
+        }
+    } catch (err) {
+        renderLiveState(`Camera error: ${err.message}`, "error");
+    }
+});
+
+document.getElementById("stopBtn").addEventListener("click", () => {
+    if (timer) {
+        clearInterval(timer);
+        timer = null;
+    }
+    if (mediaStream) {
+        mediaStream.getTracks().forEach((track) => track.stop());
+        mediaStream = null;
+    }
+    renderLiveState("Live prediction stopped.");
+});
+</script>
+{% endblock %}
