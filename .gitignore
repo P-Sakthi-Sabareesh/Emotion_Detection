@@ -31,6 +31,7 @@ home.html
 hub.html
 grey96.png
 live_body*.json
+.pr-body.md
 
 # Tooling
 .mypy_cache/
