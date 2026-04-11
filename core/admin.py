@@ -1,3 +1,1 @@
-from django.contrib import admin
-
-# Register your models here.
+# No admin registrations for the core app — landing pages only.

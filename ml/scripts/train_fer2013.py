@@ -21,8 +21,15 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from ml.features import build_engineered_features
-from ml.model_contract import ModelCalibrationSpec, ModelTrainingSpec, SklearnEmotionModel
+# The sys.path manipulation above is required because this file is run as a
+# script (python ml/scripts/train_fer2013.py), not imported as a module — so
+# the ml/ package isn't on sys.path until we put it there.
+from ml.features import build_engineered_features  # noqa: E402
+from ml.model_contract import (  # noqa: E402
+    ModelCalibrationSpec,
+    ModelTrainingSpec,
+    SklearnEmotionModel,
+)
 
 EMOTIONS = ["angry", "disgust", "fear", "happy", "neutral", "sad", "surprise"]
 

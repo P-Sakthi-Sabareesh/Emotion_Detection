@@ -33,7 +33,6 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 CANONICAL = ["angry", "disgust", "fear", "happy", "neutral", "sad", "surprise"]
 DEFAULT_MODEL_ID = "dima806/facial_emotions_image_detection"

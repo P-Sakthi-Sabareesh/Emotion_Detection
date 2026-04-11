@@ -1,3 +1,1 @@
-from django.test import TestCase
-
-# Create your tests here.
+# Tests for core live in inference/tests.py via end-to-end endpoint coverage.
