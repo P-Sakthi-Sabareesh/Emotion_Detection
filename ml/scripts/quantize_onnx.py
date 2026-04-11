@@ -113,7 +113,10 @@ class FerCalibrationReader:
         all_images = [p for p in root.rglob("*") if p.suffix.lower() in {".jpg", ".jpeg", ".png"}]
         if not all_images:
             raise SystemExit(f"no calibration images under {root}")
-        rng = random.Random(seed)
+        # Deterministic calibration-image shuffling, not cryptographic.
+        # random.Random(seed) is the correct primitive for reproducible
+        # calibration sampling; secrets.SystemRandom would not reproduce.
+        rng = random.Random(seed)  # nosec B311
         rng.shuffle(all_images)
         self._paths = all_images[:max_samples]
         self._iter = iter(self._paths)

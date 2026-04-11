@@ -209,7 +209,10 @@ def main() -> None:
     # Flush stdout line-by-line so background/CI log tails update in real time.
     try:
         sys.stdout.reconfigure(line_buffering=True)  # type: ignore[attr-defined]
-    except Exception:
+    except Exception:  # nosec B110
+        # sys.stdout.reconfigure is available on Python 3.7+ but may fail if
+        # stdout is wrapped by the harness. Default buffered output is fine
+        # as a fallback; we silently proceed.
         pass
 
     parser = argparse.ArgumentParser(description="Train FER-2013 model with validation and calibration.")

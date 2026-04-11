@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import argparse
-import subprocess
+
+# subprocess is used to invoke the vetted Kaggle CLI below; only an argv list
+# resolved via shutil.which is ever passed, never a shell string.
+import subprocess  # nosec B404
 import sys
 import zipfile
 from pathlib import Path
@@ -22,7 +25,10 @@ def run() -> None:
         raise SystemExit("Kaggle CLI executable not found. Install with: pip install kaggle")
 
     print(f"Downloading {args.dataset} into {output_dir}...")
-    subprocess.run(
+    # shell=False (default) is the secure form; bandit B603 flags any
+    # subprocess.run even when it is being called correctly with a list
+    # argv. kaggle_bin is resolved via shutil.which, not user input.
+    subprocess.run(  # nosec B603
         [
             kaggle_bin,
             "datasets",
