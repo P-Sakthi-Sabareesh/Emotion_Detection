@@ -3,12 +3,27 @@
 <section class="card board">
     <h2>Upload Image for Emotion Detection</h2>
     <p class="section-sub">Upload a clear face photo. The model returns emotion, confidence, and class probabilities.</p>
+
+    <div class="consent-notice" role="note">
+        <strong>Biometric notice.</strong> This page runs facial emotion analysis on the image you submit.
+        Your image is processed on our servers. If you do not tick the consent box, the request will be
+        rejected. You may delete any stored record via the <code>DELETE /api/v1/records/&lt;id&gt;/</code> API.
+    </div>
+
     <form method="post" enctype="multipart/form-data" class="upload-form">
         {% csrf_token %}
-        <input type="file" name="image" accept="image/*" required>
+        <input type="file" name="image" accept="image/jpeg,image/png,image/webp" required>
+        <label class="consent-check">
+            <input type="checkbox" name="consent" value="true" required>
+            I consent to biometric analysis of this image.
+        </label>
         <button class="btn primary" type="submit">Predict Emotion</button>
     </form>
     <p><a href="{% url 'prediction-hub' %}">Back to prediction</a></p>
+
+    {% if warning %}
+    <div class="status warning">{{ warning }}</div>
+    {% endif %}
 
     {% if error %}
     <div class="status error">{{ error }}</div>
@@ -17,7 +32,10 @@
     {% if result %}
     {% widthratio result.confidence 1 100 as conf_pct %}
     <div class="prediction-card reveal-item upload-result-card" style="--emotion-accent:#4f72db;">
-        <div class="prediction-head">Upload Prediction Result</div>
+        <div class="prediction-head">
+            Upload Prediction Result
+            {% if result.degraded %}<span class="badge-degraded">degraded</span>{% endif %}
+        </div>
         <div class="prediction-main single-col">
             <div class="pred-metrics-col">
                 <div class="pred-label">Prediction</div>
@@ -51,6 +69,7 @@
         <div class="prediction-footer">
             <div><span>Latency</span><strong>{{ result.latency_ms }} ms</strong></div>
             <div><span>Model Version</span><strong>{{ result.model_version }}</strong></div>
+            <div><span>Model Loaded</span><strong>{{ result.model_loaded|yesno:"yes,no" }}</strong></div>
         </div>
     </div>
     {% endif %}

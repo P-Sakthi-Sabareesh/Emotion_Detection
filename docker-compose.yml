@@ -1,0 +1,62 @@
+services:
+  web:
+    build: .
+    image: emotiondetect-web:latest
+    env_file:
+      - .env
+    environment:
+      DJANGO_DEBUG: "False"
+      DATABASE_URL: "postgres"
+      POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379/0
+      FER_RATE_LIMIT_BACKEND: redis
+      FER_REQUIRE_SIGNED_ARTIFACT: "True"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/readyz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  worker:
+    build: .
+    image: emotiondetect-web:latest
+    command: ["python", "manage.py", "purge_predictions", "--days", "30"]
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: "postgres"
+      POSTGRES_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: ["cron"]
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-emotiondetect}
+      POSTGRES_USER: ${POSTGRES_USER:-emotiondetect}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-emotiondetect}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-emotiondetect}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+volumes:
+  postgres_data:

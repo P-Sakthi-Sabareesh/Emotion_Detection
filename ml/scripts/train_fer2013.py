@@ -21,6 +21,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from ml.features import build_engineered_features
 from ml.model_contract import ModelCalibrationSpec, ModelTrainingSpec, SklearnEmotionModel
 
 EMOTIONS = ["angry", "disgust", "fear", "happy", "neutral", "sad", "surprise"]
@@ -48,27 +49,9 @@ def load_split(split_dir: Path, max_per_class: int | None = None) -> tuple[np.nd
 
 
 def build_features(images: np.ndarray) -> np.ndarray:
-    n_samples = images.shape[0]
-    raw = images.reshape(n_samples, -1)
-    grad_x = np.diff(images, axis=2, append=images[:, :, -1:])
-    grad_y = np.diff(images, axis=1, append=images[:, -1:, :])
-    grad_mag = np.sqrt((grad_x * grad_x) + (grad_y * grad_y)).astype(np.float32, copy=False)
-    pooled = images.reshape(n_samples, 24, 2, 24, 2).mean(axis=(2, 4))
-    pooled_grad = grad_mag.reshape(n_samples, 24, 2, 24, 2).mean(axis=(2, 4))
-    intensity = raw.mean(axis=1, keepdims=True)
-    contrast = raw.std(axis=1, keepdims=True)
-    features = np.concatenate(
-        [
-            raw,
-            grad_mag.reshape(n_samples, -1),
-            pooled.reshape(n_samples, -1),
-            pooled_grad.reshape(n_samples, -1),
-            intensity,
-            contrast,
-        ],
-        axis=1,
-    )
-    return features.astype(np.float32, copy=False)
+    # Delegated to ml.features so the runtime and the trainer produce
+    # byte-identical feature vectors.
+    return build_engineered_features(images)
 
 
 def softmax(logits: np.ndarray) -> np.ndarray:
@@ -202,10 +185,11 @@ def build_candidate_estimators(random_state: int) -> dict[str, object]:
                 (
                     "clf",
                     LinearSVC(
-                        C=1.2,
+                        C=1.0,
                         class_weight="balanced",
                         dual="auto",
-                        max_iter=7000,
+                        max_iter=1500,
+                        tol=1e-3,
                         random_state=random_state,
                     ),
                 ),
@@ -215,6 +199,12 @@ def build_candidate_estimators(random_state: int) -> dict[str, object]:
 
 
 def main() -> None:
+    # Flush stdout line-by-line so background/CI log tails update in real time.
+    try:
+        sys.stdout.reconfigure(line_buffering=True)  # type: ignore[attr-defined]
+    except Exception:
+        pass
+
     parser = argparse.ArgumentParser(description="Train FER-2013 model with validation and calibration.")
     parser.add_argument("--dataset-root", default="data/raw")
     parser.add_argument("--output-dir", default="ml/artifacts")
@@ -226,7 +216,19 @@ def main() -> None:
     parser.add_argument("--calibration-cv", type=int, default=3)
     parser.add_argument("--calibrate-probabilities", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--jobs", type=int, default=-1)
+    parser.add_argument(
+        "--candidates",
+        default="sgd_log_elasticnet,sgd_modified_huber",
+        help=(
+            "Comma-separated subset of candidate estimators to train. "
+            "Known names: sgd_log_elasticnet, sgd_modified_huber, linear_svc_margin. "
+            "LinearSVC is off by default because it lacks early stopping and can run "
+            "for many minutes on high-dim features without converging."
+        ),
+    )
     args = parser.parse_args()
+
+    wanted = {name.strip() for name in args.candidates.split(",") if name.strip()}
 
     dataset_root = Path(args.dataset_root).resolve()
     train_dir = dataset_root / "train"
@@ -278,7 +280,13 @@ def main() -> None:
 
     print(f"Feature dimension: {x_train_sub.shape[1]}")
     print("Running validation model selection...")
-    candidates = build_candidate_estimators(random_state=args.random_state)
+    all_candidates = build_candidate_estimators(random_state=args.random_state)
+    unknown = wanted - set(all_candidates)
+    if unknown:
+        raise SystemExit(f"Unknown --candidates entries: {sorted(unknown)}. Known: {sorted(all_candidates)}")
+    candidates = {name: estimator for name, estimator in all_candidates.items() if name in wanted}
+    if not candidates:
+        raise SystemExit("No candidates selected; pass --candidates with at least one name.")
     candidate_rows: list[dict[str, object]] = []
     selected_name: str | None = None
     selected_model: object | None = None

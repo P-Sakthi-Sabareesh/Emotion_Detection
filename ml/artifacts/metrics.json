@@ -1,0 +1,14 @@
+{
+  "model_version": "hf-dima806_facial_emotions_image_detection-onnx",
+  "source": "dima806/facial_emotions_image_detection",
+  "note": "metrics not computed on export; see model card on HuggingFace",
+  "labels": [
+    "angry",
+    "disgust",
+    "fear",
+    "happy",
+    "neutral",
+    "sad",
+    "surprise"
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "contract_schema_version": "2.0.0",
+  "model_version": "hf-dima806_facial_emotions_image_detection-onnx",
+  "source_model": "dima806/facial_emotions_image_detection",
+  "exported_at_utc": "2026-04-11T17:17:57+00:00",
+  "labels": [
+    "angry",
+    "disgust",
+    "fear",
+    "happy",
+    "neutral",
+    "sad",
+    "surprise"
+  ],
+  "source_labels": [
+    "sad",
+    "disgust",
+    "angry",
+    "neutral",
+    "fear",
+    "surprise",
+    "happy"
+  ],
+  "class_permutation": [
+    2,
+    1,
+    4,
+    6,
+    3,
+    0,
+    5
+  ],
+  "input_spec": {
+    "image_mode": "RGB",
+    "width": 224,
+    "height": 224,
+    "normalize": "imagenet",
+    "image_mean": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "image_std": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "layout": "NCHW",
+    "value_range": [
+      0.0,
+      1.0
+    ]
+  },
+  "output_spec": {
+    "logits_dim": 7,
+    "softmax_applied": false
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "artifact_contract_version": "2",
+  "model_version": "hf-dima806_facial_emotions_image_detection-onnx",
+  "input_spec": {
+    "image_mode": "RGB",
+    "width": 224,
+    "height": 224,
+    "normalize": "imagenet",
+    "image_mean": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "image_std": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "layout": "NCHW",
+    "value_range": [
+      0.0,
+      1.0
+    ]
+  },
+  "labels": [
+    "angry",
+    "disgust",
+    "fear",
+    "happy",
+    "neutral",
+    "sad",
+    "surprise"
+  ],
+  "class_permutation": [
+    2,
+    1,
+    4,
+    6,
+    3,
+    0,
+    5
+  ],
+  "files": {
+    "model": {
+      "path": "C:\\Zaex\\Github\\Emotion_Detection\\ml\\artifacts\\emotion_classifier.onnx",
+      "sha256": "a2f77a5835329f7665c336c52a2883826a5a97f6ce727d3a031afc992db8d72d",
+      "size_bytes": 86993642
+    },
+    "metadata": {
+      "path": "C:\\Zaex\\Github\\Emotion_Detection\\ml\\artifacts\\model_metadata.json",
+      "sha256": "68bbd2be8ef47e68aeebd8e1a2b1b89595ee3c1d7fd1d898f62413ff81e81869",
+      "size_bytes": 964
+    },
+    "metrics": {
+      "path": "C:\\Zaex\\Github\\Emotion_Detection\\ml\\artifacts\\metrics.json",
+      "sha256": "34bad2ea4e2ed1e344a7d2398df5f44f6856475d3108569d1d565f455edd7733",
+      "size_bytes": 328
+    }
+  },
+  "signature_hex": "fdaf657a8b3bde240b1d4f4cecb95789d4c003009e8400371d3475e49f4235db",
+  "signature_algorithm": "HMAC-SHA256"
+}

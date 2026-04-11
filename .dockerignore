@@ -1,0 +1,19 @@
+.git
+.gitignore
+.venv
+__pycache__
+*.pyc
+*.pyo
+db.sqlite3
+media/
+staticfiles/
+data/raw/
+# ml/artifacts/ is intentionally NOT ignored — release images ship with the
+# signed model artifact so the runtime doesn't need an external mount.
+# Make sure you have run ml/scripts/sign_artifact.py on the manifest first.
+.env
+.env.local
+.env.*
+docs/
+*.md
+.github/

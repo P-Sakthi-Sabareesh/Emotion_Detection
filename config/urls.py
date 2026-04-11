@@ -23,6 +23,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("core.urls")),
     path("", include("inference.urls")),
+    path("", include("history.urls")),
 ]
 
 if settings.DEBUG:
