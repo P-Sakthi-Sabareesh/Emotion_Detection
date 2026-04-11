@@ -1,0 +1,4 @@
+# Placeholder — keeps ml/artifacts/ tracked in git while the actual model
+# files (emotion_classifier.onnx, artifact_manifest.json, metrics.json,
+# model_metadata.json) are generated locally by scripts/bootstrap_model.py
+# and excluded via .gitignore.

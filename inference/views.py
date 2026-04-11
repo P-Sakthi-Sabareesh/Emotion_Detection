@@ -200,6 +200,11 @@ def readyz(_: HttpRequest) -> JsonResponse:
         "model": status,
         "database": "ok" if db_ok else "error",
     }
+    if not status.get("loaded"):
+        body["hint"] = (
+            "Model artifact missing. Run `python scripts/bootstrap_model.py` "
+            "with FER_MODEL_SIGNING_KEY set to download + sign the FER ViT."
+        )
     return JsonResponse(body, status=200 if ready else 503)
 
 
