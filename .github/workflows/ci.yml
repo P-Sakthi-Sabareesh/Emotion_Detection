@@ -26,7 +26,9 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: requirements.txt
+          cache-dependency-path: |
+            requirements.txt
+            requirements-bootstrap.txt
 
       - name: Install runtime dependencies
         run: |
@@ -37,10 +39,10 @@ jobs:
         run: pip install ruff==0.6.9 bandit==1.7.9 pip-audit==2.7.3
 
       - name: Ruff lint
-        run: ruff check config core history inference ml
+        run: ruff check config core history inference ml scripts
 
       - name: Bandit security lint
-        run: bandit -q -r config core history inference ml -x inference/tests.py
+        run: bandit -q -r config core history inference ml scripts -x inference/tests.py
 
       - name: pip-audit (known CVEs)
         run: pip-audit --strict --ignore-vuln GHSA-xxxx-xxxx-xxxx || true
@@ -48,5 +50,15 @@ jobs:
       - name: Django system checks
         run: python manage.py check --deploy --fail-level WARNING || true
 
+      - name: Install bootstrap dependencies (torch + transformers CPU-only)
+        run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements-bootstrap.txt
+
+      - name: Bootstrap FER model (download + export + sign)
+        env:
+          FER_MODEL_SIGNING_KEY: ci-signing-key-ci-signing-key-ci-signing-key-ci-signing-xx
+        run: python scripts/bootstrap_model.py
+
       - name: Run tests
+        env:
+          FER_MODEL_SIGNING_KEY: ci-signing-key-ci-signing-key-ci-signing-key-ci-signing-xx
         run: python manage.py test --verbosity 2

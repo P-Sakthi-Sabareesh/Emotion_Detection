@@ -1,0 +1,15 @@
+# Heavy deps needed ONLY to download + export the FER ViT from HuggingFace
+# during `python scripts/bootstrap_model.py`. Not in the runtime image.
+#
+# Install alongside requirements.txt before running bootstrap:
+#   pip install -r requirements.txt -r requirements-bootstrap.txt
+#   python scripts/bootstrap_model.py
+#
+# The final Docker runtime image installs only requirements.txt; these deps
+# live only in the multi-stage builder layer and get dropped.
+
+torch==2.6.0
+transformers==4.57.1
+huggingface_hub==0.34.4
+onnx==1.17.0
+safetensors==0.5.3

@@ -26,8 +26,9 @@ if not DEBUG:
             "DJANGO_SECRET_KEY must be set to a value of at least 50 characters in production."
         )
 elif not SECRET_KEY:
-    # Local-dev only: a banner will make this obvious via log output.
-    SECRET_KEY = "dev-only-insecure-key-regenerate-for-any-non-local-use-0123456789"
+    # Local-dev only: the production guard above raises when DEBUG is False,
+    # so this literal is only ever reachable in a local-dev shell.
+    SECRET_KEY = "dev-only-insecure-key-regenerate-for-any-non-local-use-0123456789"  # nosec B105
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
 if not DEBUG and not ALLOWED_HOSTS:

@@ -75,7 +75,10 @@ def _open_pil(example):
                 return Image.open(io.BytesIO(img["bytes"]))
             if isinstance(img, (bytes, bytearray)):
                 return Image.open(io.BytesIO(img))
-        except Exception:
+        except Exception:  # nosec B112
+            # Loader tries multiple HF image field conventions (image/img/jpg
+            # /png/webp). A decode failure on one key should fall through to
+            # the next candidate, not abort the whole dataset prep.
             continue
     return None
 
